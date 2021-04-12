@@ -158,81 +158,134 @@ public class Main {
 			optionsPanel.setLayout(new GridLayout(2, 2));
 			timerWindow.getContentPane().add(optionsPanel);
 
-			JButton startButton = new JButton("Start");
+			JPanel lowerPanel = new JPanel();
+			{
+				JPanel calibratePanel = new JPanel();
+				{
+					JTextField hitField = new JTextField("");
+					((PlainDocument) hitField.getDocument()).setDocumentFilter(new IntFilter()); //thanks google
+					calibratePanel.add(hitField);
 
-			//TODO: CLEAN UP THIS CODE - it works fine though so that can wait :)
-			startButton.addActionListener((e) -> {
-				if(timerThread != null) {
-					timerThread.stop();
+					JButton calibrate = new JButton("Calibrate");
+					calibrate.addActionListener((e) -> {
+						try {
+							int hit = Integer.parseInt(hitField.getText());
+							//i *could* define these outside of the method and make methods to replace repeating code but... No.
+							String[] inputStrings;
+							if (textField.getText().contains(",")) {
+								inputStrings = textField.getText().split(",");
+							} else {
+								inputStrings = new String[]{textField.getText()};
+							}
+
+							int target = Integer.parseInt(inputStrings[0]);
+							int calibrated = target + (target - hit);
+							inputStrings[0] = calibrated + ""; //lol it works
+							String calibratedInput = "";
+							for(int i = 0; i < inputStrings.length; i++) {
+								calibratedInput += inputStrings[i] + (i < (inputStrings.length - 1) ? "," : "");
+							}
+							textField.setText(calibratedInput);
+
+							//duplicate code again :)
+							long ms = textField.getText().contains(",") ? Long.parseLong(textField.getText().split(",")[0])
+									: Long.parseLong(textField.getText()); //Lol
+							if(timeModeBox.getSelectedIndex() == 1) {
+								ms /= framerates[fpsBox.getSelectedIndex()] / 1000.0;
+							}
+							timeLabel.setText(String.format("%.3f", ms / 1000.f));
+						} catch(Exception ex) {}
+					});
+					calibratePanel.add(calibrate);
 				}
+				calibratePanel.setLayout(new GridLayout(1, 2));
+				lowerPanel.add(calibratePanel);
+				JButton startButton = new JButton("Start");
 
-				framesMode = timeModeBox.getSelectedIndex() == 1;
-
-				String[] inputStrings;
-				if(textField.getText().contains(",")) {
-					inputStrings = textField.getText().split(",");
-				} else {
-					inputStrings = new String[] { textField.getText() };
-				}
-				long input = (long)(Long.parseLong(inputStrings[0]) / (framesMode ? framerates[fpsBox.getSelectedIndex()] / 1000.0 : 1.0));
-
-				timeLabel.setText(String.format("%.3f", input / 1000.f));
-
-				//I LOVE MY BRAIN!
-				switch(comboBox.getSelectedIndex()) {
-					case 0: {
-						while(!ImageUtil.checkSolidColor(ScreenUtil.captureAreaOfScreen(area, screen), 5)) {
-							try {
-								Thread.sleep(0, (int)(oneSnano / framerates[fpsBox.getSelectedIndex()]));
-							} catch(Exception ex) {}
-						}
-						break;
+				//TODO: CLEAN UP THIS CODE - it works fine though so that can wait :)
+				startButton.addActionListener((e) -> {
+					if (timerThread != null) {
+						timerThread.stop();
 					}
-					case 1: {
-						boolean reset = false, passedReset = false;
-						while(!passedReset) {
-							try {
-								boolean result = ImageUtil.checkSolidColor(ScreenUtil.captureAreaOfScreen(area, screen), 5);
-								if(!result && reset) {
-									passedReset = true;
-								}
-								reset = result;
-								Thread.sleep(0, (int)(oneSnano / framerates[fpsBox.getSelectedIndex()]));
-							} catch(Exception ex) {}
-						}
-						break;
-					}
-				}
 
-				(timerThread = new Thread(() -> {
-					for(int i = 0; i < inputStrings.length; i++) {
-						long curInput = Long.parseLong(inputStrings[i]) * oneMSnano;
-						if(framesMode) {
-							curInput /= framerates[fpsBox.getSelectedIndex()] / 1000.0;
-						}
-						timeLabel.setText(String.format("%.3f", curInput / oneMSnano / 1000.f));
-						long endTime = System.nanoTime() + curInput, beep = endTime - (oneMSnano * 2500L), update = System.nanoTime() + oneMSnano * 11;
-						while (System.nanoTime() < endTime) {
-							try {
-								long nanoTime = System.nanoTime();
-								if (nanoTime > update) {
-									timeLabel.setText(String.format("%.3f", ((endTime - nanoTime) / oneMSnano) / 1000.f));
-									update += oneMSnano * 11;
-								}
-								if (nanoTime > beep) {
-									playClip();
-									beep += 500L * oneMSnano;
-								}
+					framesMode = timeModeBox.getSelectedIndex() == 1;
 
-								Thread.sleep(0, oneMSnano / 5);
-							} catch (Exception ex) { }
-						}
-						playClip();
+					String[] inputStrings;
+					if (textField.getText().contains(",")) {
+						inputStrings = textField.getText().split(",");
+					} else {
+						inputStrings = new String[]{textField.getText()};
 					}
+					long input = (long) (Long.parseLong(inputStrings[0]) / (framesMode ? framerates[fpsBox.getSelectedIndex()] / 1000.0 : 1.0));
+
 					timeLabel.setText(String.format("%.3f", input / 1000.f));
-				})).start();
-			});
-			timerWindow.getContentPane().add(startButton);
+
+					//I LOVE MY BRAIN!
+					int count = 0;
+					switch (comboBox.getSelectedIndex()) {
+						case 0: {
+							while (!ImageUtil.checkSolidColor(ScreenUtil.captureAreaOfScreen(area, screen), 5)) {
+								try {
+									Thread.sleep(0, (int) (oneSnano / framerates[fpsBox.getSelectedIndex()]));
+								} catch (Exception ex) {
+								}
+							}
+							break;
+						}
+						case 1: {
+							boolean reset = false, passedReset = false;
+							while (!passedReset) {
+								try {
+									boolean result = ImageUtil.checkSolidColor(ScreenUtil.captureAreaOfScreen(area, screen), 5);
+									if (!result && reset) {
+										passedReset = true;
+									}
+									reset = result;
+									if (reset) {
+										count++;
+										System.out.println(count);
+									}
+									Thread.sleep(0, (int) (oneSnano / framerates[fpsBox.getSelectedIndex()]));
+								} catch (Exception ex) {
+								}
+							}
+							break;
+						}
+					}
+
+					(timerThread = new Thread(() -> {
+						for (int i = 0; i < inputStrings.length; i++) {
+							long curInput = Long.parseLong(inputStrings[i]) * oneMSnano;
+							if (framesMode) {
+								curInput /= framerates[fpsBox.getSelectedIndex()] / 1000.0;
+							}
+							timeLabel.setText(String.format("%.3f", curInput / oneMSnano / 1000.f));
+							long endTime = System.nanoTime() + curInput, beep = endTime - (oneMSnano * 2500L), update = System.nanoTime() + oneMSnano * 11;
+							while (System.nanoTime() < endTime) {
+								try {
+									long nanoTime = System.nanoTime();
+									if (nanoTime > update) {
+										timeLabel.setText(String.format("%.3f", ((endTime - nanoTime) / oneMSnano) / 1000.f));
+										update += oneMSnano * 11;
+									}
+									if (nanoTime > beep) {
+										playClip();
+										beep += 500L * oneMSnano;
+									}
+
+									Thread.sleep(0, oneMSnano / 5);
+								} catch (Exception ex) {
+								}
+							}
+							playClip();
+						}
+						timeLabel.setText(String.format("%.3f", input / 1000.f));
+					})).start();
+				});
+				lowerPanel.add(startButton);
+			}
+			lowerPanel.setLayout(new GridLayout(2, 1));
+			timerWindow.getContentPane().add(lowerPanel);
 
 			timerWindow.setSize(400, 200);
 			timerWindow.setVisible(true);

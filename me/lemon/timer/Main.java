@@ -11,6 +11,7 @@ import javax.swing.text.PlainDocument;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
 
 public class Main {
@@ -63,7 +64,7 @@ public class Main {
 		})).start();
 	}
 
-	public void setDetectionData(Rectangle area, int screen) {
+	public void setDetectionData(Rectangle area, int screen, BufferedImage matchImage) {
 		new Thread(() -> {
 			JFrame timerWindow = new JFrame("Timer");
 			timerWindow.getContentPane().setLayout(new GridLayout(3, 1));
@@ -146,7 +147,7 @@ public class Main {
 				} catch (Exception ex) {}
 			});
 
-			JComboBox<String> comboBox = new JComboBox(new String[] { "First", "Last" });
+			JComboBox<String> comboBox = new JComboBox(new String[] { "First Reset Frame", "Last Reset Frame", "Match Selection" });
 
 			JPanel optionsPanel = new JPanel();
 			{
@@ -248,6 +249,14 @@ public class Main {
 									Thread.sleep(0, (int) (oneSnano / framerates[fpsBox.getSelectedIndex()]));
 								} catch (Exception ex) {
 								}
+							}
+							break;
+						}
+						case 2: {
+							while(!ImageUtil.compare(matchImage, ScreenUtil.captureAreaOfScreen(area, screen), 95)) {
+								try {
+									Thread.sleep(0, (int) (oneSnano / framerates[fpsBox.getSelectedIndex()]));
+								} catch(Exception ex) {}
 							}
 							break;
 						}

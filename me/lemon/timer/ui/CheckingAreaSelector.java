@@ -89,10 +89,11 @@ public class CheckingAreaSelector {
 						float height = Math.abs(image.getHeight() * lY - image.getHeight() * rY);
 						float x = image.getWidth() * fX;
 						float y = image.getHeight() * fY;
+						BufferedImage subImage = image.getSubimage((int)x, (int)y, (int)width, (int)height);
+						Main.getInstance().setDetectionData(new Rectangle((int)x, (int)y, (int)width, (int)height), screen, subImage);
 						parent.dispose();
 						System.gc();
 
-						Main.getInstance().setDetectionData(new Rectangle((int)x, (int)y, (int)width, (int)height), screen);
 					}
 				}
 
